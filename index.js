@@ -99,7 +99,7 @@ function convertOp(path, op, value, parent, arrayPaths, options) {
   if (arrayPath) {
     return createElementOrArrayQuery(path, op, value, parent, arrayPath, options)
   }
-  switch(op) {
+  switch (op) {
     case '$not':
       return '(NOT ' + convert(path, value, undefined, false, options) + ')'
     case '$nor': {
@@ -129,9 +129,8 @@ function convertOp(path, op, value, parent, arrayPaths, options) {
     // TODO (make sure this handles multiple elements correctly)
     case '$elemMatch':
       return convert(path, value, arrayPaths, false, options)
-      //return util.pathToText(path, false) + ' @> \'' + util.stringEscape(JSON.stringify(value)) + '\'::jsonb'
-    case '$in':
-    case '$nin': {
+    //return util.pathToText(path, false) + ' @> \'' + util.stringEscape(JSON.stringify(value)) + '\'::jsonb'
+    case '$in': {
       if (value.length === 0) {
         return 'FALSE'
       }
@@ -141,7 +140,21 @@ function convertOp(path, op, value, parent, arrayPaths, options) {
       const cleanedValue = value.filter((v) => (v !== null && typeof v !== 'undefined'))
       let partial = util.pathToText(path, typeof value[0] == 'string') + (op == '$nin' ? ' NOT' : '') + ' IN (' + cleanedValue.map(util.quote).join(', ') + ')'
       if (value.length != cleanedValue.length) {
-        return (op === '$in' ? '(' + partial + ' OR IS NULL)' : '(' + partial + ' AND IS NOT NULL)'  )
+        return (op === '$in' ? '(' + partial + ' OR IS NULL)' : '(' + partial + ' AND IS NOT NULL)')
+      }
+      return partial
+    }
+    case '$nin': {
+      /*  if (value.length === 0) {
+         return 'FALSE'
+       }
+       if (value.length === 1) {
+         return convert(path, value[0], arrayPaths, false, options)
+       } */
+      const cleanedValue = value.filter((v) => (v !== null && typeof v !== 'undefined'))
+      let partial = util.pathToText(path, typeof value[0] == 'string') + (op == '$nin' ? ' NOT' : '') + ' IN (' + cleanedValue.map(util.quote).join(', ') + ')'
+      if (value.length != cleanedValue.length) {
+        return (op === '$in' ? '(' + partial + ' OR IS NULL)' : '(' + partial + ' AND IS NOT NULL)')
       }
       return partial
     }
@@ -149,7 +162,7 @@ function convertOp(path, op, value, parent, arrayPaths, options) {
       const newOp = '~' + (!value['$caseSensitive'] ? '*' : '')
       return util.pathToText(path, true) + ' ' + newOp + ' \'' + util.stringEscape(value['$search']) + '\''
     }
-    case '$regex':  {
+    case '$regex': {
       var regexOp = '~'
       var op2 = ''
       if (parent['$options'] && parent['$options'].includes('i')) {
@@ -169,14 +182,14 @@ function convertOp(path, op, value, parent, arrayPaths, options) {
     case '$lt':
     case '$lte':
     case '$ne':
-    case '$eq':  {
+    case '$eq': {
       const isSimpleComparision = (op === '$eq' || op === '$ne')
       const pathContainsArrayAccess = path.some((key) => /^\d+$/.test(key))
       if (isSimpleComparision && !pathContainsArrayAccess && !options.disableContainmentQuery) {
         // create containment query since these can use GIN indexes
         // See docs here, https://www.postgresql.org/docs/9.4/datatype-json.html#JSON-INDEXING
         const [head, ...tail] = path
-        return `${op=='$ne' ? 'NOT ' : ''}${head} @> ` + util.pathToObject([...tail, value])
+        return `${op == '$ne' ? 'NOT ' : ''}${head} @> ` + util.pathToObject([...tail, value])
       } else {
         var text = util.pathToText(path, typeof value == 'string')
         return text + OPS[op] + util.quote(value)
