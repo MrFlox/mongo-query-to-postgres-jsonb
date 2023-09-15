@@ -36,9 +36,9 @@ exports.pathToText = function(path, isString) {
   }
   for (var i = 1; i < path.length; i++) {
     text += (i == path.length-1 && isString ? '->>' : '->')
-    if (/^\d+$/.test(path[i]))
-      text += path[i] //don't wrap numbers in  quotes
-    else
+    // if (/^\d+$/.test(path[i]))
+    //   text += path[i] //don't wrap numbers in  quotes
+    // else
       text += '\'' + exports.stringEscape(path[i]) + '\''
   }
   return text
